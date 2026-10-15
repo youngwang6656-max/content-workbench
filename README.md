@@ -31,4 +31,4 @@ Windows 解压后双击 **启动内容工作台.cmd**。首次启动按现有启
 
 技术栈为 FastAPI、SQLite 和原生网页，无前端构建要求。内部 Python 模块及项目文件格式沿用 waypoint 名称，以保持既有迁移兼容。通用版是独立源码分支，不覆盖原版安装。
 
-维护者 / 预定 GitHub 仓库所有者：**youngwang6656-max**。每个使用者只管理自己的安装；本机管理员身份与 GitHub 仓库权限分别管理。
+维护者 / GitHub 仓库所有者：**youngwang6656-max**。[源码仓库](https://github.com/youngwang6656-max/content-workbench) · [版本下载](https://github.com/youngwang6656-max/content-workbench/releases)。每个使用者只管理自己的安装；本机管理员身份与 GitHub 仓库权限分别管理。
