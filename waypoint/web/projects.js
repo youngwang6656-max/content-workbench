@@ -1,0 +1,18 @@
+export async function manageProject(ctx,id){
+ const {state,api,esc,dialog,toast,refreshProjects,render}=ctx;
+ const p=state.projects.find(x=>x.id===id);if(!p)return;
+ const management=await api('/projects/'+id+'/management');
+ const peers=state.projects.filter(x=>Boolean(x.pinned)===Boolean(p.pinned));const position=peers.findIndex(x=>x.id===id);
+ const d=dialog('管理品牌',`<label for="brand-name">品牌名称</label><input id="brand-name" name="name" required maxlength="200" value="${esc(p.name)}"><label><input type="checkbox" name="pinned" ${p.pinned?'checked':''}>置顶此品牌</label><div class="actions"><button type="button" id="brand-up" ${position===0?'disabled':''}>上移</button><button type="button" id="brand-down" ${position===peers.length-1?'disabled':''}>下移</button></div><p class="note">在同组品牌中调整顺序，置顶品牌始终排在前面。</p><div class="form-footer"><button class="primary">保存名称与置顶</button></div><hr><h3>合并品牌</h3><p class="note">任务、历史稿件、意见、规则和资料会转入目标品牌。合并前自动备份；合并后需核对资料与规则。原稿与附件保留。</p><label for="merge-target">目标品牌</label><select id="merge-target">${state.projects.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select><button type="button" id="preview-merge" ${state.projects.length<2?'disabled':''}>预览合并范围</button><div id="merge-preview"></div>${management.merges.length?`<hr><h3>撤销合并</h3><p class="note">仅在合并后没有新修改时可撤销，避免覆盖新内容。</p><button type="button" id="undo-merge" data-receipt="${management.merges.at(-1).id}">撤销上次合并</button>`:''}`,async(f,form,d)=>{
+  await api('/projects/'+id,{method:'PATCH',body:{name:f.get('name'),pinned:f.has('pinned')}});d.close();await refreshProjects();await render();toast('品牌名称与置顶已保存');
+ });
+ async function move(offset){const index=state.projects.findIndex(x=>x.id===id),other=peers[position+offset];if(!other)return;const ids=state.projects.map(x=>x.id),j=ids.indexOf(other.id);[ids[index],ids[j]]=[ids[j],ids[index]];localStorage.setItem('waypoint_project_sort','manual');await api('/projects/reorder',{method:'POST',body:{ids}});d.close();await refreshProjects();await render();toast('品牌顺序已保存');}
+ d.querySelector('#brand-up').onclick=()=>move(-1);d.querySelector('#brand-down').onclick=()=>move(1);
+ d.querySelector('#merge-target').onchange=()=>{d.querySelector('#merge-preview').innerHTML='';};
+ d.querySelector('#preview-merge').onclick=async()=>{
+  const target=d.querySelector('#merge-target').value;const pre=await api('/projects/'+id+'/merge-preview',{method:'POST',body:{target_id:target}});
+  const box=d.querySelector('#merge-preview');box.innerHTML=`<div class="panel merge-review"><strong>${esc(pre.source.name)} → ${esc(pre.target.name)}</strong><p>转入 ${pre.counts.task} 个任务、${pre.counts.material} 条资料及 ${pre.counts.rule} 条规则记录。历史版本、意见与附件一并保留。</p><details><summary>查看双方当前规则</summary><h4>${esc(pre.source.name)}</h4><pre>${esc(pre.source_rules||'没有自定义品牌规则')}</pre><h4>${esc(pre.target.name)}</h4><pre>${esc(pre.target_rules||'没有自定义品牌规则')}</pre></details><p class="note">目标品牌保留现有内容；双方规则按来源标记合并，冲突需要后续核对。此操作不会生成内容或产生模型费用。</p><button type="button" class="primary" id="confirm-merge">确认合并到 ${esc(pre.target.name)}</button></div>`;
+  box.querySelector('#confirm-merge').onclick=async ev=>{ev.target.disabled=true;try{await api('/projects/'+id+'/merge',{method:'POST',body:{target_id:target,fingerprint:pre.fingerprint}});state.project=target;state.page='home';d.close();await refreshProjects();await render();toast('品牌已合并，原稿与附件已保留');}finally{ev.target.disabled=false;}};
+ };
+ const undo=d.querySelector('#undo-merge');if(undo)undo.onclick=async()=>{const result=await api('/project-merges/'+undo.dataset.receipt+'/undo',{method:'POST',body:{}});state.project=result.project_id;d.close();await refreshProjects();await render();toast('已撤销合并');};
+}

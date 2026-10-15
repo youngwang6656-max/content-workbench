@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "content-workbench"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi", "uvicorn", "python-multipart", "httpx[socks]", "pypdf", "python-docx", "tzdata", "python-pptx", "openpyxl", "pypdfium2", "Pillow"]
+[project.scripts]
+content-workbench = "waypoint.launcher:main"
+waypoint = "waypoint.launcher:main"
+[tool.setuptools.package-data]
+waypoint = ["web/*", "migrations/*.sql", "transfer_prompt.md", "manuals/*.md"]
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

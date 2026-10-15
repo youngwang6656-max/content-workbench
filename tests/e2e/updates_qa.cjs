@@ -1,0 +1,48 @@
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+ const page=await browser.newPage({viewport:{width:1440,height:1050}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.emulateMedia({colorScheme:'dark'});await page.goto('http://127.0.0.1:8880/');
+  await page.locator('.task-card').first().waitFor();
+  for(const kind of ['post','comment','cb'])assert.equal(await page.locator(`.task-card [data-content-kind="${kind}"]`).count(),1);
+  assert.equal(await page.locator('.task-card [data-content-kind="post"] text').textContent(),'A');
+  assert.equal(await page.locator('.task-card [data-content-kind="comment"] text').textContent(),'c');
+  assert.equal(await page.locator('.task-card [data-content-kind="cb"] text').textContent(),'B');
+  await page.screenshot({path:'D:/waypoint_codex_handoff/acceptance/v060_content_icons.png',fullPage:true});
+  assert.equal(await page.locator('meta[name="waypoint-developer"]').getAttribute('content'),'youngwang6656@gmail.com');
+  assert.equal((await page.locator('body').innerText()).includes('youngwang6656@gmail.com'),false);
+  await page.getByRole('button',{name:'设置与用量',exact:true}).click();await page.getByRole('heading',{name:'程序更新与本地修改',exact:true}).waitFor();
+  await page.getByText('检测到 1 个本地源码差异。',{exact:false}).waitFor();
+  assert.equal(await page.locator('#check-update').isDisabled(),true);
+  await page.locator('#update-source-form [name="url"]').fill('https://updates.example.com/latest.json');
+  await page.getByRole('button',{name:'保存更新源',exact:true}).click();await page.getByText('更新源已保存，未发起联网检查',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'检查新版',exact:true}).click();await page.getByRole('button',{name:'备份资料并下载新版',exact:true}).waitFor();
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'备份资料并下载新版',exact:true}).click();
+  const downloaded=await pending;assert(/^waypoint_workbench_v\d+_\d+_\d+_/.test(downloaded.suggestedFilename()));
+  await page.getByText('已校验下载并备份业务资料。',{exact:false}).waitFor();
+  assert.equal(await page.locator('[name="api_enabled"]').isChecked(),false);
+  await page.getByText('查看本地修改文件',{exact:true}).click();await page.getByText('本地新增 · waypoint/local_patch.py',{exact:true}).waitFor();
+  await page.screenshot({path:'D:/waypoint_codex_handoff/acceptance/v060_updates.png',fullPage:true});
+  await page.reload();await page.getByRole('button',{name:'设置与用量',exact:true}).click();await page.locator('#update-source-form').waitFor();
+  assert.equal(await page.locator('#update-source-form [name="url"]').inputValue(),'https://updates.example.com/latest.json');
+  const status=await (await page.request.get('http://127.0.0.1:8880/api/updates/status')).json();assert.equal(status.local_changes.count,1);assert.equal(status.automatic_install,false);
+  await page.getByRole('button',{name:'工作台',exact:true}).click();
+  assert.equal(await page.locator('.brand-circle').first().locator('circle').count(),1);
+  assert.equal(await page.locator('.brand-circle circle').first().getAttribute('r'),'3.5');
+  await page.locator('.task-card').filter({hasText:'帖文图标 A'}).click();
+  await page.locator('#recommend-count').waitFor();
+  assert.equal(await page.locator('#recommend-count option[value="1"]').textContent(),'1 个社群');
+  assert.equal((await page.locator('#recommend-count').textContent()).includes('1–5'),true);
+  await page.locator('#recommend-count').selectOption('1');
+  await page.screenshot({path:'D:/waypoint_codex_handoff/acceptance/v060_one_community.png',fullPage:true});
+  const session=await (await page.request.get('http://127.0.0.1:8880/api/session')).json();
+  assert.equal((await page.request.post('http://127.0.0.1:8880/api/projects',{headers:{'X-Waypoint-Token':session.token},data:{name:'空白页验收'}})).ok(),true);
+  await page.reload();await page.locator('.project-item').filter({hasText:'空白页验收'}).click();
+  await page.getByRole('heading',{name:'让一个想法有个去处',exact:true}).waitFor();
+  assert.equal(await page.locator('.empty .mark').count(),0);
+  await page.screenshot({path:'D:/waypoint_codex_handoff/acceptance/v060_empty_no_w.png',fullPage:true});
+  assert.deepEqual(errors,[]);console.log(JSON.stringify({passed:true,icons:3,hiddenMarker:true,updateCheck:'mock',download:'verified-mock-package',localCodeRetained:true,apiEnabled:false}));
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

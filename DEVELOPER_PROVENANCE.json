@@ -1,0 +1,8 @@
+{
+  "format": "waypoint-developer-provenance",
+  "schema": 1,
+  "developer": "youngwang6656@gmail.com",
+  "fingerprint": "62b89a399f646facf73dbfa393cc1019c7308a16f186263258ba96955a194773",
+  "algorithm": "sha256",
+  "purpose": "passive-source-attribution"
+}

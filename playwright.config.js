@@ -1,0 +1,2 @@
+const {defineConfig}=require('@playwright/test');
+module.exports=defineConfig({testDir:'tests/e2e',workers:1,use:{baseURL:'http://127.0.0.1:8877',headless:true,launchOptions:process.env.WAYPOINT_TEST_CHROME?{executablePath:process.env.WAYPOINT_TEST_CHROME,args:["--no-sandbox","--disable-gpu","--disable-dev-shm-usage"]}:{}},webServer:{command:process.platform==='win32'?'.venv\\Scripts\\python.exe tests/e2e/server.py':'.venv/bin/python tests/e2e/server.py',url:'http://127.0.0.1:8877/api/session',reuseExistingServer:false},reporter:'list'});

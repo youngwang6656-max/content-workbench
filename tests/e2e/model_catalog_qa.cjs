@@ -1,0 +1,25 @@
+const assert=require('node:assert/strict');const {chromium}=require('playwright');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});const page=await browser.newPage();const errors=[];let generation=0;page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/api/tasks/run'))generation++});
+try{
+ await page.goto('http://127.0.0.1:8878/');
+ const session=await (await page.request.get('http://127.0.0.1:8878/api/session')).json();
+ const reset=await page.request.post('http://127.0.0.1:8878/api/settings',{headers:{'X-Waypoint-Token':session.token},data:{usage_configs:[{id:'subscription-initial',name:'订阅配置',provider:'codex',model_roles:{write:'gpt-5.5',translate:'gpt-5.5'}}],active_usage_config_id:'subscription-initial'}});assert.equal(reset.status(),200);
+ await page.getByRole('button',{name:'设置与用量',exact:true}).click();await page.locator('[data-edit-usage]').first().click();
+ await page.waitForFunction(()=>[...document.querySelectorAll('#dialog [name="plus_write"] option')].some(x=>x.value==='gpt-6.1-sol'),{timeout:5000});
+ const options=await page.locator('#dialog [name="plus_write"] option').evaluateAll(nodes=>nodes.map(n=>({value:n.value,disabled:n.disabled,text:n.textContent})));
+ assert(options.some(x=>x.value==='gpt-6.1-sol'&&!x.disabled));
+ assert(options.some(x=>x.value==='gpt-5.5'&&x.disabled&&x.text.includes('不可用')));
+ assert.match(await page.locator('#dialog').innerText(),/推理强度.*高/);
+ await page.locator('#dialog [name="plus_write"]').selectOption('gpt-6.1-sol');
+ await page.getByRole('button',{name:'保存模型配置',exact:true}).click();
+ await page.locator('#dialog .dialog-error').getByText('已选订阅模型不在当前目录，请改选或重新同步').waitFor();
+ const before=await (await page.request.get('http://127.0.0.1:8878/api/settings')).json();
+ assert.equal(before.usage_configs[0].model_roles.write,'gpt-5.5');
+ assert.equal(before.usage_configs[0].model_roles.translate,'gpt-5.5');
+ await page.locator('#dialog [name="plus_translate"]').selectOption('gpt-6-luna');
+ await page.getByRole('button',{name:'保存模型配置',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('.usage-config-row')?.textContent.includes('gpt-6.1-sol'));
+ const settings=await (await page.request.get('http://127.0.0.1:8878/api/settings')).json();
+ assert.equal(settings.usage_configs[0].model_roles.write,'gpt-6.1-sol');assert.equal(settings.usage_configs[0].model_roles.translate,'gpt-6-luna');assert.equal(settings.switch_policy,'manual');assert.equal(settings.api_enabled,false);
+ assert.equal(generation,0);assert.deepEqual(errors,[]);console.log('PASS: edit refreshes actual returned model list, retired saved model visibly disabled, high default explained; no generation or API enablement. Synthetic catalog.');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});
