@@ -121,8 +121,8 @@ def test_update_routes_protected_by_account(tmp_path):
     with TestClient(create_app(tmp_path,FakeProvider()),base_url='http://127.0.0.1:8765') as c:
         assert c.get('/api/updates/status').status_code==401
         token=c.get('/api/session').json()['token']
-        assert c.post('/api/auth/register',headers={'X-Waypoint-Token':token},json={
-            'username':'qa_owner','display_name':'模拟验收','password':'disposable-password-2026'}).status_code==200
+        assert c.post('/api/auth/name',headers={'X-Waypoint-Token':token},json={
+            'name':'模拟验收'}).status_code==200
         status=c.get('/api/updates/status');assert status.status_code==200 and status.json()['manifest_url']==''
         assert c.post('/api/updates/source',json={'url':''}).status_code==403
         assert c.get('/api/settings').json()['api_enabled'] is False

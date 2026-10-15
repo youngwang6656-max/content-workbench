@@ -4,8 +4,8 @@
 
 - 这是本机单所有者应用，默认127.0.0.1:8766，独立数据目录为 LOCALAPPDATA/content-workbench 或 CONTENT_WORKBENCH_DATA_DIR。不能改回原版目录、端口或 Cookie；不要操作原版安装。
 - 账号、官方模型认证、密钥、图片标识及业务资料只在各自安装中。源码和 GitHub 不包含账号数据库、会话、品牌资料、认证、日志、备份或自定义图片。
-- 本机唯一账号为 owner；不可添加固定密码、隐藏入口或跨其他使用者安装的管理员权限。GitHub所有者与本机账号无认证互通。
-- 自定义标识在 waypoint/branding.py 和 web/branding.js。GET仅公开图片与最少显示信息，写入必须通过现有登录、CSRF和本机来源检查；静态PNG/JPEG/WebP<=5MB，校验像素并转换，不能直接保存上传的HTML/SVG。
+- 当前按用户要求仅输入名称即可进入，名称不验证身份或隔离本机资料。LocalIdentity保存独立local_identity.sqlite及会话，保留本机管理能力。旧accounts.sqlite只保留，不读写；密码注册/登录/修改接口不挂载。不可设置固定或空密码，也不添加远程管理员。
+- 自定义标识在 waypoint/branding.py 和 web/branding.js。GET仅公开图片与最少显示信息，写入必须先进入本机名称会话，并通过CSRF和本机来源检查；静态PNG/JPEG/WebP<=5MB，校验像素并转换，不能直接保存上传的HTML/SVG。
 - 保留FastAPI、SQLite和原生网页；内部waypoint模块及文件格式保留兼容。产品显示名称为内容工作台，不带公司Logo。
 - 保留品牌隔离、原始输入、稿件、意见、确切回译及父稿依赖。所有内容仅供模拟分析，不添加发帖或群发。
 - 帖文和评论最终为英文成品，中途查看节点可以一键直达英文。AI推荐社群后，人工确认社群及每群篇数；评论一篇原帖一个任务，绑定后不可替换。

@@ -87,7 +87,7 @@ class CodexProvider:
                 stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.DEVNULL,limit=8_000_000)
             self.reader=asyncio.create_task(self._read())
             try:
-                await self.call('initialize',{'clientInfo':{'name':'waypoint','title':'waypoint','version':'1.0.0'}},ready=False)
+                await self.call('initialize',{'clientInfo':{'name':'waypoint','title':'waypoint','version':'1.0.1'}},ready=False)
                 await self._send({'method':'initialized','params':{}})
             except BaseException:
                 await self.close(); raise

@@ -8,7 +8,7 @@ sys.path.insert(0,str(root));sys.path.insert(0,str(root/'tests'))
 from waypoint.server import create_app
 from test_workflow import FakeProvider
 app=create_app(tempfile.mkdtemp(prefix='waypoint_accounts_qa_'),provider=FakeProvider())
-app.state.accounts.register('qa_owner','界面验收账号','disposable-qa-password-2026')
+app.state.accounts.enter('界面验收账号')
 a=app.state.repo.create_project('TOPDON');b=app.state.repo.create_project('DJI')
 app.state.repo.create_project('70mai')
 from waypoint.contracts import TaskSpec

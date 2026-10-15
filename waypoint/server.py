@@ -9,7 +9,8 @@ from waypoint.repository import Repository
 from waypoint.providers.codex import CodexProvider
 from waypoint.workflow import Engine
 from waypoint.material_auto import AutoMaterialProcessor
-from waypoint.accounts import Accounts,COOKIE
+from waypoint.accounts import COOKIE
+from waypoint.local_identity import LocalIdentity
 
 def create_app(data_dir,provider=None,*,accounts_enabled=True):
     repo=Repository(data_dir);codex=provider or CodexProvider(Path(data_dir));engine=Engine(repo,codex);token=secrets.token_urlsafe(32)
@@ -23,7 +24,7 @@ def create_app(data_dir,provider=None,*,accounts_enabled=True):
         if hasattr(codex,'close'):await codex.close()
     app=FastAPI(docs_url=None,redoc_url=None,openapi_url=None,lifespan=lifespan)
     app.state.repo=repo;app.state.provider=codex;app.state.engine=engine;app.state.material_auto=material_auto
-    accounts=Accounts(Path(data_dir)) if accounts_enabled else None
+    accounts=LocalIdentity(Path(data_dir)) if accounts_enabled else None
     app.state.accounts=accounts
     @app.middleware('http')
     async def secure(request,call_next):
@@ -33,9 +34,9 @@ def create_app(data_dir,provider=None,*,accounts_enabled=True):
             return JSONResponse({'detail':'仅允许本机工作台访问'},status_code=403)
         auth=accounts.session(request.cookies.get(COOKIE)) if accounts else None
         request.state.auth=auth
-        public=request.url.path in ('/api/session','/api/auth/register','/api/auth/login') or (request.method in ('GET','HEAD') and request.url.path in ('/api/branding','/api/branding/logo'))
+        public=request.url.path in ('/api/session','/api/auth/name') or (request.method in ('GET','HEAD') and request.url.path in ('/api/branding','/api/branding/logo'))
         if accounts and request.url.path.startswith('/api/') and not public and not auth:
-            return JSONResponse({'detail':'请先登录个人账号'},status_code=401)
+            return JSONResponse({'detail':'请先输入使用名称'},status_code=401)
         expected_token=auth['csrf'] if auth else token
         if request.method not in ('GET','HEAD','OPTIONS') and not secrets.compare_digest(request.headers.get('x-waypoint-token',''),expected_token):
             return JSONResponse({'detail':'会话已更新，请刷新页面后再试'},status_code=403)
@@ -52,8 +53,8 @@ def create_app(data_dir,provider=None,*,accounts_enabled=True):
     @app.get('/api/session')
     def session(request:Request):
         auth=request.state.auth
-        return {'token':auth['csrf'] if auth else token,'version':'1.0.0','edition':'generic',
-                'auth':{'enabled':accounts_enabled,'configured':accounts.configured() if accounts else False,
+        return {'token':auth['csrf'] if auth else token,'version':'1.0.1','edition':'generic',
+                'auth':{'enabled':accounts_enabled,'mode':'name','configured':accounts.configured() if accounts else False,
                         'user':auth['user'] if auth else None}}
     @app.get('/')
     def index():return FileResponse(Path(__file__).parent/'web/index.html')
@@ -86,4 +87,4 @@ def create_app(data_dir,provider=None,*,accounts_enabled=True):
     app.mount('/static',StaticFiles(directory=Path(__file__).parent/'web'),name='static')
     return app
 
-from waypoint.accounts import install as install_accounts
+from waypoint.local_identity import install as install_accounts

@@ -192,8 +192,8 @@ def test_profile_routes_require_owner_and_csrf(tmp_path):
     with TestClient(create_app(tmp_path,FakeProvider()),base_url='http://127.0.0.1:8765') as c:
         assert c.get('/api/api-profiles').status_code==401
         token=c.get('/api/session').json()['token']
-        assert c.post('/api/auth/register',headers={'X-Waypoint-Token':token},json={
-            'username':'qa_owner','display_name':'验收账号','password':'disposable-password-2026'}).status_code==200
+        assert c.post('/api/auth/name',headers={'X-Waypoint-Token':token},json={
+            'name':'验收账号'}).status_code==200
         assert c.post('/api/api-profiles',json={}).status_code==403
         token=c.get('/api/session').json()['token']
         result=c.post('/api/api-profiles',headers={'X-Waypoint-Token':token},json={

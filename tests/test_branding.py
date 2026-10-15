@@ -10,7 +10,7 @@ def picture(color='red',size=(120,60)):
 
 def register(c):
     headers={'X-Waypoint-Token':c.get('/api/session').json()['token']}
-    assert c.post('/api/auth/register',headers=headers,json={'username':'owner','password':'local-test-password-123'}).status_code==200
+    assert c.post('/api/auth/name',headers=headers,json={'name':'owner'}).status_code==200
     return {'X-Waypoint-Token':c.get('/api/session').json()['token']}
 
 
